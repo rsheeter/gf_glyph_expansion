@@ -1,6 +1,21 @@
 # gf_glyph_expansion
 Exploratory hackery in search of opportunities to add glyphs to Google Fonts to expand their language coverage
 
+## Usage
+
+```python
+# in a venv
+$ pip install -e .
+$ gf_glyph_expansion
+9295 to add <=  1 and support at least one new language
+$ gf_glyph_expansion --max_missing 10
+319388 to add <=  10 and support at least one new language
+$ gf_glyph_expansion --max_missing 10 --family_filter "^Roboto$"
+180 to add <=  10 and support at least one new language
+```
+
+Note that every (family, chars) pair is counted as one so the number of results for one family can be > 1.
+
 ## Derived from Simon's search for ẞ
 
 ```python
