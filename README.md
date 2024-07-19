@@ -5,11 +5,23 @@ Exploratory hackery in search of opportunities to add glyphs to Google Fonts to 
 
 To assess ROI we need to value both cost and benefit. Both are done in magical ROI units.
 
+Value is taken to be value / cost.
+
 ### Value
 
-Details TBD. Combination of:
-
-* Popularity
+* Popularity gives a base score, loosely tied to magnitude of traffic
+  * 50 for top 10
+  * 25 for top 50
+  * 10 for top 150
+  * 5 for top 500
+  * otherwise 1
+* For every language that would be added apply a population based multiplier
+   * 10 for >= 1 billion
+   * 5 for >= 0.1 billion
+   * 1.5 for >= 0.01 billion
+   * 1.1 for >= 1 million
+   * 1.01 for >= 0.1 million
+   * otherwise 0.5
 * Ease of update
 * Other value signals
    * For example, we might boost known growth areas

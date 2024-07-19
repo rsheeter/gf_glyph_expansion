@@ -31,6 +31,7 @@ setup_args = dict(
         "fontTools>=4",
         "gflanguages>=0.6",
         "gftools>=0.9",  # this is insanely heavy, depends on all the things. Ideally remove.
+        "requests>=2",
     ],
     extras_require={
         "dev": [
