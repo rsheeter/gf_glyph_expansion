@@ -1,5 +1,6 @@
 from absl import app, flags
 from collections import defaultdict
+from dataclasses import dataclass
 from fontTools import ttLib
 import functools
 import gflanguages
@@ -18,6 +19,28 @@ flags.DEFINE_string("gf_repo", str(Path.home() / "oss" / "fonts"), "The root of 
 flags.DEFINE_string("cache_dir", "/tmp/gf_glyph_temp", "A place to cache outputs between runs")
 flags.DEFINE_integer("max_missing", 1, "If a font has <= this many missing chars for a language it's an opportunity")
 flags.DEFINE_string("family_filter", None, "Families whose name doesn't include this pattern are skipped")
+
+
+@dataclass
+class Family:
+    name: str
+    num_fonts: int
+    num_axes: int
+    exemplar_font_file: Path
+
+    def cost_multiplier(self) -> float:
+        if self.num_axes > 0:
+            multiplier = 1 + 2 ** (self.num_axes - 1)
+            if self.num_fonts > 1:
+                multiplier *= 1.5
+        else:
+            multiplier = 0.9 + 0.1 * self.num_fonts
+
+        return multiplier
+
+
+def glyph_cost(num_glyphs: int) -> float:
+    return 0.9 + 0.1 * num_glyphs
 
 
 def disk_cache(fn) -> Any:
@@ -52,7 +75,7 @@ def load_language_base_sets() -> Dict[str, Set[chr]]:
 
 
 @disk_cache
-def load_family_exemplars() -> Dict[str, Path]:
+def load_families() -> Dict[str, Family]:
     result = {}
     for license in ("ofl", "ufl", "apache"):
         license_dir = Path(FLAGS.gf_repo) / license
@@ -66,7 +89,7 @@ def load_family_exemplars() -> Dict[str, Path]:
                 print("Unable to load", metadata_file, ":", e)
                 continue
             exemplar_font_file = Path(f"{license}/{metadata_file.parent.name}/{google_fonts.GetExemplarFont(metadata).filename}")
-            result[metadata.name] = exemplar_font_file
+            result[metadata.name] = Family(metadata.name, len(metadata.fonts), len(metadata.axes), exemplar_font_file)
     return result
 
 
@@ -90,7 +113,7 @@ def cache_dir() -> Path:
 
 def _run(_) -> int:
     base_sets = load_language_base_sets()
-    exemplars = load_family_exemplars()
+    families = load_families()
 
     # (family, chars) => {langs}
     opportunities = defaultdict(set)
@@ -101,12 +124,12 @@ def _run(_) -> int:
         filter_fn = lambda name: re.search(FLAGS.family_filter, name) is not None
 
     skipped = 0
-    for (family, exemplar_font_file) in exemplars.items():
-        if not filter_fn(family):
+    for (family_name, family) in families.items():
+        if not filter_fn(family_name):
             skipped += 1
             continue
 
-        font_chars = chars_in_font(exemplar_font_file)
+        font_chars = chars_in_font(family.exemplar_font_file)
 
         for (lang, lang_chars) in base_sets.items():
             missing_chars = tuple(sorted(lang_chars - font_chars))  # sets aren't hashable
@@ -114,10 +137,11 @@ def _run(_) -> int:
             if not opportunity:
                 #print(family, lang, "is NOT an opportunity, missing", missing_chars)
                 continue
-            opportunities[(family, missing_chars)].add(lang)
+            opportunities[(family_name, missing_chars)].add(lang)
 
     for (family, missing_chars) in sorted(opportunities.keys()):
-        print(family, "needs", len(missing_chars), "to support", sorted(opportunities[(family, missing_chars)]), ":", "".join(sorted(missing_chars)))
+        cost = glyph_cost(len(missing_chars)) * families[family].cost_multiplier()
+        print(family, "needs", len(missing_chars), "to support", sorted(opportunities[(family, missing_chars)]), ":", "".join(sorted(missing_chars)), "cost", f"{cost:.1f}")
     print(len(opportunities), "to add <= ", FLAGS.max_missing, "and support at least one new language")
     print(skipped, "families skipped by --family_filter")
 

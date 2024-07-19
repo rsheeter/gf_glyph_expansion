@@ -1,6 +1,35 @@
 # gf_glyph_expansion
 Exploratory hackery in search of opportunities to add glyphs to Google Fonts to expand their language coverage
 
+## Valuing an extension
+
+To assess ROI we need to value both cost and benefit. Both are done in magical ROI units.
+
+### Value
+
+Details TBD. Combination of:
+
+* Popularity
+* Ease of update
+* Other value signals
+   * For example, we might boost known growth areas
+
+### Cost
+
+Based on discussion with @davelab6, assume that:
+
+* Getting setup to modify a font at all is expensive
+   * Glyph 1 costs 1 unit
+   * Glyph 2..n cost 0.1 units each
+   * 1 glyph for 1 unit, 11 glyphs for 2 units, etc
+* Modifying multiple static fonts or a variable font costs more than a single static font
+   * For a static family, multiply cost by 0.9 + 0.1 * number of fonts
+      * x 1.0 for a single static font, x 1.8 for a family with 9 static weights, etc
+   * For a variable family, multiply cost by 1 + 2^(num_axes - 1)
+      * If there are multiple fonts (e.g. Regular/Italic) multiply by 1.5
+      * x 2.0 for weight variable, x 3.0 for weight+width variable, x 17.0 for Recursive with 5 axes
+      * This makes adding glyphs to Flex fonts *very* expensive ... which is perhaps accurate?
+
 ## Usage
 
 ```python
