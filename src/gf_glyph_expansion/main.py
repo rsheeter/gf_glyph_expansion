@@ -48,19 +48,20 @@ class Language:
     population: int
     required_chars: Set[chr]
 
-    def value_multiplier(self) -> float:
-        if self.population >= 10**9:
-            return 10
-        elif self.population >= 10**8:
-            return 5
-        elif self.population >= 10**7:
-            return 1.5
-        elif self.population >= 10**6:
-            return 1.1
-        elif self.population >= 10**5:
-            return 1.01
-        else:
-            return 0.5
+
+def population_multiplier(population) -> float:
+    if population >= 10**9:
+        return 20
+    elif population >= 10**8:
+        return 10
+    elif population >= 10**7:
+        return 5
+    elif population >= 10**6:
+        return 2
+    elif population >= 10**5:
+        return 1.1
+    else:
+        return 1
 
 
 @dataclass
@@ -87,13 +88,13 @@ class FamilyStats:
     popularity: int  # fully ordered starting at 0 for highest popularity
 
     def base_value(self) -> float:
-        if self.popularity > 10:
+        if self.popularity < 10:
             return 50
-        elif self.popularity > 50:
+        elif self.popularity < 50:
             return 25
-        elif self.popularity > 150:
+        elif self.popularity < 150:
             return 10
-        elif self.popularity > 500:
+        elif self.popularity < 500:
             return 5
         else:
             return 1
@@ -241,20 +242,20 @@ def _run(_) -> int:
     opportunities = []
     for (family, missing_chars), langs in raw_opportunities.items():
         value = stats[family].base_value()
-        for lang in langs:
-            value *= languages[lang].value_multiplier()
+        value *= population_multiplier(
+            sum(languages[lang].population for lang in langs)
+        )
         cost = glyph_cost(len(missing_chars)) * families[family].cost_multiplier()
         opportunities.append(Opportunity(family, missing_chars, langs, value, cost))
 
-    # Sort by= value/cost, popularity
-    opportunities.sort(key=lambda o: (o.value / o.cost, stats[o.name].popularity))
+    # Sort by= value/cost, -popularity (so lower is better)
+    opportunities.sort(key=lambda o: (o.value / o.cost, -stats[o.name].popularity))
 
     for opportunity in opportunities:
         additional = ""
         if FLAGS.debug:
             pop = ",".join(
-                f"{languages[lang].population} (x{languages[lang].value_multiplier():.2f})"
-                for lang in opportunity.langs
+                f"{languages[lang].population}" for lang in sorted(opportunity.langs)
             )
             additional = (
                 f"value {opportunity.value:.1f} cost {opportunity.cost:.1f} pop {pop}"

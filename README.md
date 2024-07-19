@@ -15,13 +15,13 @@ Value is taken to be value / cost.
   * 10 for top 150
   * 5 for top 500
   * otherwise 1
-* For every language that would be added apply a population based multiplier
-   * 10 for >= 1 billion
-   * 5 for >= 0.1 billion
-   * 1.5 for >= 0.01 billion
-   * 1.1 for >= 1 million
-   * 1.01 for >= 0.1 million
-   * otherwise 0.5
+* Add up the populations of the added languages and multiply based on total:
+   * 20 for >= 1 billion
+   * 10 for >= 0.1 billion
+   * 5 for >= 0.01 billion
+   * 2 for >= 1 million
+   * 1.1 for >= 0.1 million
+   * otherwise 1
 * Ease of update
 * Other value signals
    * For example, we might boost known growth areas
