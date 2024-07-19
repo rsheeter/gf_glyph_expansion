@@ -30,6 +30,11 @@ Based on discussion with @davelab6, assume that:
       * x 2.0 for weight variable, x 3.0 for weight+width variable, x 17.0 for Recursive with 5 axes
       * This makes adding glyphs to Flex fonts *very* expensive ... which is perhaps accurate?
 
+**TODO: multiply cost by 2 (?) if family is hard to update**
+
+   * data source https://github.com/googlefonts/gf-dashboard/blob/main/cache.json (courtesy of Simon)
+   * A family is hard to update _unless_ it has_upstream and last_updated is within ... maybe 2 years ... 
+
 ## Usage
 
 ```python

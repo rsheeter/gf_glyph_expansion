@@ -22,6 +22,12 @@ flags.DEFINE_string("family_filter", None, "Families whose name doesn't include 
 
 
 @dataclass
+class Language:
+    lang: str
+    population: int
+    required_chars: Set[chr]
+
+@dataclass
 class Family:
     name: str
     num_fonts: int
@@ -66,10 +72,10 @@ def disk_cache(fn) -> Any:
 
 
 @disk_cache
-def load_language_base_sets() -> Dict[str, Set[chr]]:
+def load_languages() -> Dict[str, Language]:
     langs = gflanguages.LoadLanguages()
     return {
-        lang: gflanguages.parse(data.exemplar_chars.base)
+        lang: Language(lang, data.population, gflanguages.parse(data.exemplar_chars.base))
         for (lang, data) in gflanguages.LoadLanguages().items()
     }
 
@@ -112,7 +118,7 @@ def cache_dir() -> Path:
 
 
 def _run(_) -> int:
-    base_sets = load_language_base_sets()
+    languages = load_languages()
     families = load_families()
 
     # (family, chars) => {langs}
@@ -131,17 +137,18 @@ def _run(_) -> int:
 
         font_chars = chars_in_font(family.exemplar_font_file)
 
-        for (lang, lang_chars) in base_sets.items():
-            missing_chars = tuple(sorted(lang_chars - font_chars))  # sets aren't hashable
+        for language in languages.values():
+            missing_chars = tuple(sorted(language.required_chars - font_chars))  # sets aren't hashable
             opportunity = 0 < len(missing_chars) <= FLAGS.max_missing
             if not opportunity:
                 #print(family, lang, "is NOT an opportunity, missing", missing_chars)
                 continue
-            opportunities[(family_name, missing_chars)].add(lang)
+            opportunities[(family_name, missing_chars)].add(language.lang)
 
-    for (family, missing_chars) in sorted(opportunities.keys()):
+    for ((family, missing_chars), langs) in sorted(opportunities.items()):
         cost = glyph_cost(len(missing_chars)) * families[family].cost_multiplier()
-        print(family, "needs", len(missing_chars), "to support", sorted(opportunities[(family, missing_chars)]), ":", "".join(sorted(missing_chars)), "cost", f"{cost:.1f}")
+        pop = sum(languages[lang].population for lang in langs)
+        print(family, "needs", len(missing_chars), "to support", sorted(opportunities[(family, missing_chars)]), ":", "".join(sorted(missing_chars)), "cost", f"{cost:.1f}", "pop", pop)
     print(len(opportunities), "to add <= ", FLAGS.max_missing, "and support at least one new language")
     print(skipped, "families skipped by --family_filter")
 
